@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plantasia-config
+data:
+  MONGODB_USER: "admin"
+  MONGODB_HOST: "10.0.101.122"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plantasia
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: plantasia
+  template:
+    metadata:
+      labels:
+        app: plantasia
+    spec:
+      containers:
+      - name: plantasia
+        image: 476114158430.dkr.ecr.eu-north-1.amazonaws.com/plantasia
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: plantasia-config
+        env:
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-credentials
+              key: MONGODB_PASSWORD
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: plantasia
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: plantasia

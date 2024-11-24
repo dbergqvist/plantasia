@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plantasia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #2c5530;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .tagline {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        
+        #waterButton {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 18px;
+            margin: 20px 0;
+            cursor: pointer;
+            border-radius: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        #waterButton:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.2);
+        }
+        
+        #wateringList {
+            margin-top: 30px;
+            text-align: left;
+            background-color: #e8f5e9;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #wateringList h2 {
+            color: #2c5530;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        #wateringList div {
+            padding: 10px;
+            margin: 8px 0;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        #wateringList div:hover {
+            background-color: #f8f8f8;
+            transform: translateX(5px);
+            transition: all 0.2s ease;
+        }
+        
+        .input-container {
+            margin: 20px 0;
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #4CAF50;
+            border-radius: 25px;
+            width: 200px;
+            margin-right: 10px;
+            outline: none;
+        }
+        
+        input[type="text"]:focus {
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>Plantasia</h1>
+    <div class="tagline">An app for plants and people who love them</div>
+    
+    <div class="input-container">
+        <input type="text" id="nameInput" placeholder="Enter your name (optional)">
+    </div>
+    
+    <button id="waterButton">Watered! 🌿</button>
+    <div id="wateringList"></div>
+
+    <script>
+        document.getElementById('waterButton').addEventListener('click', async () => {
+            const name = document.getElementById('nameInput').value.trim();
+            
+            try {
+                const response = await fetch('/api/water', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        name: name
+                    })
+                });
+                const result = await response.text();
+                console.log('Response:', result);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            
+            loadWateringEvents();
+        });
+
+        async function loadWateringEvents() {
+            try {
+                const response = await fetch('/api/water');
+                const events = await response.json();
+                
+                const list = document.getElementById('wateringList');
+                list.innerHTML = '<h2>Watering History</h2>';
+                
+                events.reverse().forEach(event => {
+                    const date = new Date(event.timestamp);
+                    const formattedDate = date.toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'long'
+                    });
+                    
+                    const message = event.name 
+                        ? `${event.name} watered the plants on ${formattedDate}, ${event.name} is a green hero! 🌱`
+                        : `Plants were watered on ${formattedDate} by an anonymous hero! 🌱`;
+                    
+                    list.innerHTML += `<div>${message}</div>`;
+                });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        loadWateringEvents();
+    </script>
+</body>
+</html> 
