@@ -8,13 +8,11 @@ env:
   AWS_REGION: eu-north-1
   ECR_REPOSITORY: plantasia
   EKS_CLUSTER: prod-plantasia
+  EKS_ROLE_ARN: arn:aws:iam::476114158430:role/eks-cluster-access-role
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     
     steps:
     - uses: actions/checkout@v4
@@ -31,6 +29,7 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ env.EKS_ROLE_ARN }}
         role-duration-seconds: 1200
 
     - name: Login to Amazon ECR
@@ -47,10 +46,16 @@ jobs:
           ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-    - name: Update kube config
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Configure kubectl
       run: |
-        aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
-        kubectl config current-context
+        aws eks update-kubeconfig \
+          --name ${{ env.EKS_CLUSTER }} \
+          --region ${{ env.AWS_REGION }}
 
     - name: Deploy to EKS
       run: |
