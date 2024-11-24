@@ -80,17 +80,42 @@ A simple plant watering tracker application built with Go, MongoDB, and Kubernet
 
 ## Infrastructure Setup
 
-1. MongoDB Instance:
-   - EC2 instance running MongoDB
-   - Security group allowing port 27017
-   - Authentication enabled
+### Terraform
 
-2. Kubernetes:
-   - EKS cluster
-   - ConfigMap for MongoDB connection
-   - Secret for MongoDB password
-   - Deployment with 2 replicas
-   - LoadBalancer service
+1. Initialize Terraform:
+   ```bash
+   cd terraform
+   terraform init
+   ```
+
+2. Review the infrastructure changes:
+   ```bash
+   terraform plan
+   ```
+
+3. Apply the infrastructure:
+   ```bash
+   terraform apply
+   ```
+
+The Terraform configuration creates:
+- EKS cluster with node groups
+- VPC with public and private subnets
+- EC2 instance for MongoDB
+- Security groups and IAM roles
+- ECR repository for container images
+
+### MongoDB Instance:
+- EC2 instance running MongoDB
+- Security group allowing port 27017
+- Authentication enabled
+
+### Kubernetes:
+- EKS cluster
+- ConfigMap for MongoDB connection
+- Secret for MongoDB password
+- Deployment with 2 replicas
+- LoadBalancer service
 
 ## Contributing
 
@@ -123,3 +148,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Project Structure
+```
+.
+├── main.go                 # Main application file
+├── internal/              
+│   ├── handlers/          # HTTP handlers
+│   └── models/            # Data models
+├── static/                # Frontend files
+├── terraform/             # Infrastructure as Code
+│   ├── main.tf           # Main Terraform configuration
+│   ├── variables.tf      # Variable definitions
+│   └── outputs.tf        # Output definitions
+├── kubernetes/            # Kubernetes manifests
+│   └── plantasia.yaml    # Deployment configuration
+├── Dockerfile            # Container build instructions
+├── go.mod               # Go module file
+└── README.md            # This file
+```
