@@ -38,6 +38,7 @@ A simple plant watering tracker application built with Go, MongoDB, and Kubernet
 
 1. Build and push Docker image:
    ```bash
+   # Replace [AWS_ACCOUNT_ID] and [REGION] with your values
    docker buildx build --platform linux/amd64,linux/arm64 \
      -t [AWS_ACCOUNT_ID].dkr.ecr.[REGION].amazonaws.com/plantasia:latest \
      --push .
@@ -135,6 +136,20 @@ The Terraform configuration creates:
 ├── go.mod               # Go module file
 └── README.md            # This file
 ```
+
+## CI/CD
+
+The project uses GitHub Actions for continuous integration and deployment. On push to the main branch:
+1. Runs tests
+2. Builds Docker image
+3. Pushes to AWS ECR
+4. Updates EKS deployment
+
+Required GitHub Secrets:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- `EKS_CLUSTER_NAME`
 
 ## Contributing
 

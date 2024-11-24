@@ -16,4 +16,4 @@ plantasia
 *.tfvars
 
 # System files
-.DS_Store
+.DS_Storepolicy.json
