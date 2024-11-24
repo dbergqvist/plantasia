@@ -39,7 +39,7 @@ A simple plant watering tracker application built with Go, MongoDB, and Kubernet
 1. Build and push Docker image:
    ```bash
    docker buildx build --platform linux/amd64,linux/arm64 \
-     -t 476114158430.dkr.ecr.eu-north-1.amazonaws.com/plantasia:latest \
+     -t [AWS_ACCOUNT_ID].dkr.ecr.[REGION].amazonaws.com/plantasia:latest \
      --push .
    ```
 
