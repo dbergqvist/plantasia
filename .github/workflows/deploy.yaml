@@ -45,11 +45,9 @@ jobs:
           --name ${{ env.EKS_CLUSTER }} \
           --region ${{ env.AWS_REGION }}
         
-        # Add cluster role binding
-        kubectl create clusterrolebinding github-actions-binding \
-          --clusterrole=cluster-admin \
-          --user=arn:aws:sts::476114158430:assumed-role/eks-cluster-access-role/GitHubActions \
-          || true
+        # Get auth token and update kubeconfig
+        TOKEN=$(aws eks get-token --cluster-name ${{ env.EKS_CLUSTER }} | jq -r '.status.token')
+        kubectl config set-credentials aws --token=$TOKEN
 
     - name: Deploy to EKS
       env:
@@ -59,8 +57,8 @@ jobs:
         # Update the image in the deployment file
         sed -i "s|image:.*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" kubernetes/plantasia.yaml
         
-        # Apply the deployment
-        kubectl apply -f kubernetes/plantasia.yaml
+        # Apply the deployment with token auth
+        KUBECONFIG=/home/runner/.kube/config kubectl --token=$TOKEN apply -f kubernetes/plantasia.yaml
         
         # Verify deployment
-        kubectl rollout status deployment/plantasia
+        KUBECONFIG=/home/runner/.kube/config kubectl --token=$TOKEN rollout status deployment/plantasia
