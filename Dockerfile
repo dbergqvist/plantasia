@@ -9,8 +9,6 @@ COPY . .
 
 RUN go build -o main .
 
-COPY wizexercise.txt /app/wizexercise.txt
-
 EXPOSE 8080
 
 CMD ["./main"] 
