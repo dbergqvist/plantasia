@@ -41,37 +41,12 @@ jobs:
 
     - name: Configure kubectl
       run: |
-        mkdir -p ~/.kube
+        aws eks update-kubeconfig \
+          --name ${{ env.EKS_CLUSTER }} \
+          --region ${{ env.AWS_REGION }}
         
-        # Create kubeconfig using AWS CLI
-        cat > ~/.kube/config << EOF
-        apiVersion: v1
-        kind: Config
-        clusters:
-        - cluster:
-            server: $(aws eks describe-cluster --name ${{ env.EKS_CLUSTER }} --query "cluster.endpoint" --output text)
-            certificate-authority-data: $(aws eks describe-cluster --name ${{ env.EKS_CLUSTER }} --query "cluster.certificateAuthority.data" --output text)
-          name: kubernetes
-        contexts:
-        - context:
-            cluster: kubernetes
-            user: aws
-          name: aws
-        current-context: aws
-        users:
-        - name: aws
-          user:
-            exec:
-              apiVersion: client.authentication.k8s.io/v1beta1
-              command: aws
-              args:
-                - "eks"
-                - "get-token"
-                - "--cluster-name"
-                - "${{ env.EKS_CLUSTER }}"
-                - "--region"
-                - "${{ env.AWS_REGION }}"
-        EOF
+        # Test the connection
+        kubectl get nodes
 
     - name: Deploy to EKS
       env:
@@ -80,6 +55,9 @@ jobs:
       run: |
         # Update the image in the deployment file
         sed -i "s|image:.*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" kubernetes/plantasia.yaml
+        
+        # Show the updated deployment file
+        cat kubernetes/plantasia.yaml
         
         # Apply the deployment with validation disabled
         kubectl apply --validate=false -f kubernetes/plantasia.yaml
