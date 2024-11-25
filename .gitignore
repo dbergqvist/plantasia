@@ -16,4 +16,10 @@ plantasia
 *.tfvars
 
 # System files
-.DS_Storepolicy.json
+.DS_Store
+wizexercise.txt
+
+# Policy files
+*.policy
+policy.json
+*-policy.json
