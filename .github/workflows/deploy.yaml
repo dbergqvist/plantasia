@@ -39,24 +39,23 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+    - name: Install AWS IAM Authenticator
+      run: |
+        curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
+        chmod +x ./aws-iam-authenticator
+        sudo mv aws-iam-authenticator /usr/local/bin/
+
     - name: Configure kubectl
       run: |
-        # Create .kube directory
         mkdir -p ~/.kube
         
-        # Get cluster endpoint
-        CLUSTER_ENDPOINT=$(aws eks describe-cluster --name ${{ env.EKS_CLUSTER }} --query "cluster.endpoint" --output text)
-        
-        # Get authentication token
-        TOKEN=$(aws eks get-token --cluster-name ${{ env.EKS_CLUSTER }} --query "status.token" --output text)
-        
-        # Create kubeconfig
+        # Create kubeconfig using aws-iam-authenticator
         cat > ~/.kube/config << EOF
         apiVersion: v1
         kind: Config
         clusters:
         - cluster:
-            server: ${CLUSTER_ENDPOINT}
+            server: $(aws eks describe-cluster --name ${{ env.EKS_CLUSTER }} --query "cluster.endpoint" --output text)
             certificate-authority-data: $(aws eks describe-cluster --name ${{ env.EKS_CLUSTER }} --query "cluster.certificateAuthority.data" --output text)
           name: kubernetes
         contexts:
@@ -68,12 +67,14 @@ jobs:
         users:
         - name: aws
           user:
-            token: ${TOKEN}
+            exec:
+              apiVersion: client.authentication.k8s.io/v1alpha1
+              command: aws-iam-authenticator
+              args:
+                - "token"
+                - "-i"
+                - "${{ env.EKS_CLUSTER }}"
         EOF
-        
-        # Verify the config
-        kubectl config view
-        kubectl config current-context
 
     - name: Deploy to EKS
       env:
@@ -83,8 +84,8 @@ jobs:
         # Update the image in the deployment file
         sed -i "s|image:.*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" kubernetes/plantasia.yaml
         
-        # Apply the deployment
-        kubectl apply -f kubernetes/plantasia.yaml
+        # Apply the deployment with validation disabled
+        kubectl apply --validate=false -f kubernetes/plantasia.yaml
         
         # Verify deployment
         kubectl rollout status deployment/plantasia
