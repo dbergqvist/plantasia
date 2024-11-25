@@ -41,6 +41,9 @@ jobs:
 
     - name: Configure kubectl
       run: |
+        # Create .kube directory
+        mkdir -p ~/.kube
+        
         # Get cluster endpoint
         CLUSTER_ENDPOINT=$(aws eks describe-cluster --name ${{ env.EKS_CLUSTER }} --query "cluster.endpoint" --output text)
         
@@ -67,6 +70,10 @@ jobs:
           user:
             token: ${TOKEN}
         EOF
+        
+        # Verify the config
+        kubectl config view
+        kubectl config current-context
 
     - name: Deploy to EKS
       env:
@@ -75,9 +82,6 @@ jobs:
       run: |
         # Update the image in the deployment file
         sed -i "s|image:.*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" kubernetes/plantasia.yaml
-        
-        # Show the updated deployment file
-        cat kubernetes/plantasia.yaml
         
         # Apply the deployment
         kubectl apply -f kubernetes/plantasia.yaml
