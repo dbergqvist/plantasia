@@ -27,7 +27,6 @@ jobs:
     - name: Check Identity
       run: |
         aws sts get-caller-identity
-        aws iam list-roles
 
     - name: Login to Amazon ECR
       id: login-ecr
