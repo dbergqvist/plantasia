@@ -41,58 +41,26 @@ jobs:
 
     - name: Configure kubectl
       run: |
-        # Create .kube directory
-        mkdir -p ~/.kube
+        # Configure AWS CLI
+        aws configure set aws_access_key_id ${{ env.AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ env.AWS_SECRET_ACCESS_KEY }}
+        aws configure set aws_session_token ${{ env.AWS_SESSION_TOKEN }}
+        aws configure set region ${{ env.AWS_REGION }}
         
-        # Get cluster info
-        CLUSTER_NAME="${{ env.EKS_CLUSTER }}"
-        CLUSTER_ENDPOINT=$(aws eks describe-cluster --name ${CLUSTER_NAME} --query "cluster.endpoint" --output text)
-        CERTIFICATE_DATA=$(aws eks describe-cluster --name ${CLUSTER_NAME} --query "cluster.certificateAuthority.data" --output text)
+        # Update kubeconfig
+        aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
         
-        # Create kubeconfig
-        cat > ~/.kube/config << EOF
-        apiVersion: v1
-        kind: Config
-        clusters:
-        - cluster:
-            certificate-authority-data: ${CERTIFICATE_DATA}
-            server: ${CLUSTER_ENDPOINT}
-          name: ${CLUSTER_NAME}
-        contexts:
-        - context:
-            cluster: ${CLUSTER_NAME}
-            user: aws
-          name: ${CLUSTER_NAME}
-        current-context: ${CLUSTER_NAME}
-        preferences: {}
-        users:
-        - name: aws
-          user:
-            exec:
-              apiVersion: client.authentication.k8s.io/v1beta1
-              command: aws
-              args:
-                - --region
-                - ${{ env.AWS_REGION }}
-                - eks
-                - get-token
-                - --cluster-name
-                - ${CLUSTER_NAME}
-              env:
-                - name: AWS_ACCESS_KEY_ID
-                  value: ${{ env.AWS_ACCESS_KEY_ID }}
-                - name: AWS_SECRET_ACCESS_KEY
-                  value: ${{ env.AWS_SECRET_ACCESS_KEY }}
-                - name: AWS_SESSION_TOKEN
-                  value: ${{ env.AWS_SESSION_TOKEN }}
-        EOF
-        
-        # Test connection
-        kubectl get nodes
+        # Verify configuration
+        kubectl config view
+        kubectl config current-context
 
     - name: Deploy to EKS
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: v${{ github.sha }}
       run: |
-        kubectl apply --validate=false -f kubernetes/plantasia.yaml
+        # Update deployment image
+        kubectl set image deployment/plantasia plantasia=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        
+        # Monitor rollout
+        kubectl rollout status deployment/plantasia
