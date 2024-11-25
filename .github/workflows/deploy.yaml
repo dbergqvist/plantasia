@@ -41,6 +41,9 @@ jobs:
 
     - name: Configure kubectl
       run: |
+        # Create .kube directory
+        mkdir -p ~/.kube
+        
         # Get cluster info
         CLUSTER_NAME="${{ env.EKS_CLUSTER }}"
         CLUSTER_ENDPOINT=$(aws eks describe-cluster --name ${CLUSTER_NAME} --query "cluster.endpoint" --output text)
