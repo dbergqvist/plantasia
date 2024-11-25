@@ -41,9 +41,18 @@ jobs:
 
     - name: Configure kubectl
       run: |
+        aws eks get-token --cluster-name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }} > token.json
         aws eks update-kubeconfig \
           --name ${{ env.EKS_CLUSTER }} \
-          --region ${{ env.AWS_REGION }}
+          --region ${{ env.AWS_REGION }} \
+          --role-arn ${{ env.EKS_ROLE_ARN }}
+        
+        # Verify the configuration
+        kubectl config view
+        kubectl config current-context
+        
+        # Test connection
+        kubectl get nodes
 
     - name: Deploy to EKS
       env:
