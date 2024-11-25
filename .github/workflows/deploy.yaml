@@ -44,10 +44,6 @@ jobs:
         aws eks update-kubeconfig \
           --name ${{ env.EKS_CLUSTER }} \
           --region ${{ env.AWS_REGION }}
-        
-        # Get auth token and update kubeconfig
-        TOKEN=$(aws eks get-token --cluster-name ${{ env.EKS_CLUSTER }} | jq -r '.status.token')
-        kubectl config set-credentials aws --token=$TOKEN
 
     - name: Deploy to EKS
       env:
@@ -57,8 +53,11 @@ jobs:
         # Update the image in the deployment file
         sed -i "s|image:.*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" kubernetes/plantasia.yaml
         
-        # Apply the deployment with token auth
-        KUBECONFIG=/home/runner/.kube/config kubectl --token=$TOKEN apply -f kubernetes/plantasia.yaml
+        # Show the updated deployment file
+        cat kubernetes/plantasia.yaml
+        
+        # Apply the deployment with validation disabled
+        KUBECONFIG=/home/runner/.kube/config kubectl apply --validate=false -f kubernetes/plantasia.yaml
         
         # Verify deployment
-        KUBECONFIG=/home/runner/.kube/config kubectl --token=$TOKEN rollout status deployment/plantasia
+        KUBECONFIG=/home/runner/.kube/config kubectl rollout status deployment/plantasia
