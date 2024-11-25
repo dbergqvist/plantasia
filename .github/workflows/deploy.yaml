@@ -41,18 +41,25 @@ jobs:
 
     - name: Configure kubectl
       run: |
-        # Configure AWS CLI
-        aws configure set aws_access_key_id ${{ env.AWS_ACCESS_KEY_ID }}
-        aws configure set aws_secret_access_key ${{ env.AWS_SECRET_ACCESS_KEY }}
-        aws configure set aws_session_token ${{ env.AWS_SESSION_TOKEN }}
-        aws configure set region ${{ env.AWS_REGION }}
+        # Assume the role explicitly
+        CREDENTIALS=$(aws sts assume-role \
+          --role-arn ${{ env.EKS_ROLE_ARN }} \
+          --role-session-name GithubActionsSession \
+          --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+          --output text)
         
-        # Update kubeconfig
-        aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
+        # Set the assumed role credentials
+        export AWS_ACCESS_KEY_ID=$(echo $CREDENTIALS | cut -f1 -d' ')
+        export AWS_SECRET_ACCESS_KEY=$(echo $CREDENTIALS | cut -f2 -d' ')
+        export AWS_SESSION_TOKEN=$(echo $CREDENTIALS | cut -f3 -d' ')
         
-        # Verify configuration
-        kubectl config view
-        kubectl config current-context
+        # Update kubeconfig with assumed role
+        aws eks update-kubeconfig \
+          --name ${{ env.EKS_CLUSTER }} \
+          --region ${{ env.AWS_REGION }}
+        
+        # Test connection
+        kubectl get nodes
 
     - name: Deploy to EKS
       env:
